@@ -26,7 +26,28 @@ export class Ellipse {
 
     constructor(config: EllipseConfig, meshes: THREE.Mesh[], originMesh: THREE.Mesh, initialX: number, initialY: number, initialRot: number) {
         this.config = config;
-        this.LINE_WIDTH = 0.2 * config.radiusScale;
+        // Request 4: Adjust thickness for Page 2 (isComplex) to match origin size
+        // Origin scale is 0.13 * 0.7 for Page 2. Radius scale is 9.0.
+        // Normal LINE_WIDTH is 0.2 * radiusScale.
+        // For Page 2, we want it thicker relative to the scale? Or thinner?
+        // "Page 2 ... adjust total thickness to match origin size"
+        // If origin is small, line should be small?
+        // Let's try to make it proportional to originScale.
+        // Request 1: Match line thickness to origin width.
+        // Origin diameter is approx 2 * originScale * radiusScale.
+        // Previous was 0.2 * radiusScale.
+        // If originScale is ~0.13, diameter is ~0.26.
+        // Let's make LINE_WIDTH closer to origin diameter or at least significantly thicker.
+        // Let's try 1.5x the origin scale factor as a base width multiplier.
+
+        const originScale = this.config.originScale || 0.13;
+        if (this.config.isComplex) {
+            // Page 2
+            this.LINE_WIDTH = originScale * this.config.radiusScale * 1.2;
+        } else {
+            // Page 1
+            this.LINE_WIDTH = originScale * this.config.radiusScale * 1.5;
+        }
 
         // Container Setup
         const container = new THREE.Object3D();
@@ -115,7 +136,11 @@ export class Ellipse {
         // But user said "visible through the origin".
         // Maybe the origin is small or the line is thick?
         // Let's offset by a fraction of the origin radius.
-        const angleOffset = (originRadius * 0.5) / (currentRadius || 1);
+        // Request 4: Ellipse tip visible through origin... stop drawing where it overlaps.
+        // Since origin is transparent, we must stop AT the edge of the origin.
+        // Origin radius is approx originScale * radiusScale.
+        // We use a factor of 1.0 to stop exactly at the edge (or slightly more to be safe).
+        const angleOffset = (originRadius * 1.05) / (currentRadius || 1);
 
         // We are drawing from start (0) to end (negative).
         // So we want effectiveEnd to be end + angleOffset (less negative).
@@ -202,7 +227,10 @@ export class Ellipse {
             animating = true;
         }
 
-        if ((d.startAngle - d.currentEndAngle) > d.tailDelay || d.currentEndAngle === d.targetEndAngle) {
+        // Request 5: Delay disappearance slightly more.
+        // We can add a small buffer to the tailDelay check.
+        const disappearanceDelayBuffer = 0.5; // Extra radians or time equivalent
+        if ((d.startAngle - d.currentEndAngle) > (d.tailDelay + disappearanceDelayBuffer) || d.currentEndAngle === d.targetEndAngle) {
             if (d.currentStartAngle > d.targetEndAngle) {
                 d.currentStartAngle -= d.drawSpeed;
                 if (d.currentStartAngle < d.targetEndAngle) d.currentStartAngle = d.targetEndAngle;
@@ -215,5 +243,10 @@ export class Ellipse {
         if (animating) this.updateGeometry();
 
         return animating;
+    }
+
+    updateOriginGeometry(geometry: THREE.BufferGeometry) {
+        this.data.originMesh.geometry.dispose();
+        this.data.originMesh.geometry = geometry;
     }
 }

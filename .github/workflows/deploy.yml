@@ -18,7 +18,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://hnl-pk.github.io/salt_and_pepper/
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -11,7 +11,6 @@ export const CONFIG: Config = {
     UNIFIED_TAIL_DELAY: 2 * Math.PI * 0.85,
     COLORS: [
         0x3b2e2a, // Dark brown close to black
-        0x1a261c, // Greenish black (Deep Greenish Black)
         0x8f826b  // Darker Beige (Darkened Pepper Beige)
     ]
 };

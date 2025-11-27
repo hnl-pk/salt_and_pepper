@@ -20,14 +20,7 @@ const lineMaterials = CONFIG.COLORS.map(color => {
     });
 });
 
-const originMaterialsPage2 = CONFIG.COLORS.map(color => new THREE.MeshStandardMaterial({
-    color: color,
-    roughness: 0.4,
-    metalness: 0.3,
-    flatShading: false,
-    transparent: true,
-    opacity: 1.0
-}));
+
 
 const originMaterialsPage1 = CONFIG.COLORS.map(color => new THREE.MeshBasicMaterial({
     color: color
@@ -237,6 +230,21 @@ export class EllipseSet {
                     e.data.meshes.forEach(m => m.visible = false);
                 }
             }
+        });
+    }
+
+    regenerateOrigins() {
+        this.ellipses.forEach(e => {
+            // Generate new geometry
+            const originScaleFactor = this.config.originScale || 0.13;
+            const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
+                minPoints: this.config.isComplex ? 6 : 5,
+                maxPoints: this.config.isComplex ? 9 : 8,
+                irregularity: this.config.isComplex ? 0.2 : 0.4,
+                bevelEnabled: !this.config.isComplex
+            });
+
+            e.updateOriginGeometry(particleGeo);
         });
     }
 }
