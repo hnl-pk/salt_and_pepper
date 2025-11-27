@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Ellipse Animation - Page 2</title>
+    <link rel="stylesheet" href="SP.css">
+</head>
+
+<body>
+
+    <!-- Three.js Import -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import { initEllipseAnimation } from './SP.js';
+
+        // Initialize with a single large ellipse
+        initEllipseAnimation({
+            particleCount: 1,
+            radiusScale: 9.0, // Increased size
+            isCentered: true
+        });
+    </script>
+</body>
+
+</html>

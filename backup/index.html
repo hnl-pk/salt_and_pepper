@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ellipse Animation - Dual Mode</title>
+    <link rel="stylesheet" href="SP.css">
+</head>
+
+<body>
+    <div id="blur-overlay"></div>
+
+    <!-- Three.js Import -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import { initEllipseAnimation } from './SP.js';
+
+        // Initialize the dual-mode animation
+        initEllipseAnimation();
+    </script>
+</body>
+
+</html>
