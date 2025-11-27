@@ -45,7 +45,7 @@ function initEllipseAnimation() {
 
     // --- 2. Initialize Sets ---
     const setPage1 = new EllipseSet(scene, {
-        count: 200,
+        count: 150,
         radiusScale: 1.0,
         isCentered: false,
         segments: 32,

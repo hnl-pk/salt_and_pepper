@@ -51,7 +51,12 @@ export function createParticleGeometry(baseRadius: number, options: {
 export function randomizeShapeConditions() {
     State.drift.speed = 0.2 + Math.random() * 1.0;
     State.drift.amplitude = 0.02 + Math.random() * 0.15;
-    State.drift.sizeVarAmp = 0.1 + Math.random() * 0.4;
+
+    // Request 4: Increase probability of longer major axis (sizeVarAmp).
+    // sizeVarAmp affects xRadius (major axis usually).
+    // Let's bias it higher.
+    State.drift.sizeVarAmp = 0.3 + Math.random() * 0.5; // Previously 0.1 + 0.4
+
     State.drift.curveVarAmp = 0.1 + Math.random() * 0.4;
 
     if (Math.random() > 0.5) State.drift.speed *= -1;

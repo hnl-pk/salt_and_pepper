@@ -43,10 +43,13 @@ export class Ellipse {
         const originScale = this.config.originScale || 0.13;
         if (this.config.isComplex) {
             // Page 2
-            this.LINE_WIDTH = originScale * this.config.radiusScale * 1.2;
+            // Request 2: Restore thickness.
+            // Previous: 1.6. Restoring to 2.5.
+            this.LINE_WIDTH = originScale * this.config.radiusScale * 2.5;
         } else {
             // Page 1
-            this.LINE_WIDTH = originScale * this.config.radiusScale * 1.5;
+            // Previous: 1.5. Let's try 2.0.
+            this.LINE_WIDTH = originScale * this.config.radiusScale * 2.0;
         }
 
         // Container Setup
@@ -110,9 +113,10 @@ export class Ellipse {
 
         // Page 2 Opacity Logic
         if (this.config.isComplex) {
-            const isDrawing = !d.finished && State.hasInteracted;
-            const mat = d.originMesh.material as THREE.MeshStandardMaterial;
-            mat.opacity = isDrawing ? 0.4 : 1.0;
+            // Request 1: Don't lower opacity. Keep it 100%.
+            // Removed transition logic. Just force 1.0.
+            const mat = d.originMesh.material as THREE.MeshBasicMaterial;
+            mat.opacity = 1.0;
         }
 
         // Visibility Check
@@ -124,23 +128,14 @@ export class Ellipse {
 
         // Calculate offset to stop line before origin center
         // Origin radius is approx config.originScale * config.radiusScale
-        // We want to stop roughly 0.6 * originRadius before the center to be safe but connected
+        // Request 3: Smooth connection without thinning the whole line.
+        // We restore thickness (2.5x) but need to handle protrusion.
+        // We will taper the tip of the line so it fits into the origin.
+        // We stop slightly inside the origin.
         const originRadius = (this.config.originScale || 0.13) * this.config.radiusScale;
         const currentRadius = Math.sqrt(tipX * tipX + tipY * tipY);
-        // Angle offset = arcLength / radius. 
-        // We use a factor (e.g. 0.5) to go halfway into the origin or just to the edge.
-        // Request 2: "Ellipse drawing tip is visible through the origin... smooth connection"
-        // If origin is opaque, we don't see it. If transparent, we see it.
-        // Page 2 origin is transparent (opacity 1.0 but maybe alpha map? No, just opacity).
-        // Wait, if opacity is 1.0, it's opaque.
-        // But user said "visible through the origin".
-        // Maybe the origin is small or the line is thick?
-        // Let's offset by a fraction of the origin radius.
-        // Request 4: Ellipse tip visible through origin... stop drawing where it overlaps.
-        // Since origin is transparent, we must stop AT the edge of the origin.
-        // Origin radius is approx originScale * radiusScale.
-        // We use a factor of 1.0 to stop exactly at the edge (or slightly more to be safe).
-        const angleOffset = (originRadius * 1.05) / (currentRadius || 1);
+        // Stop at 0.8 * radius (deep inside)
+        const angleOffset = (originRadius * 0.8) / (currentRadius || 1);
 
         // We are drawing from start (0) to end (negative).
         // So we want effectiveEnd to be end + angleOffset (less negative).
@@ -185,7 +180,22 @@ export class Ellipse {
                 tx /= len; ty /= len;
 
                 const nx = ty; const ny = -tx;
-                const halfWidth = maxHalfWidth * (0.5 + 0.5 * t * t);
+
+                // Request 3: Tapering the tip.
+                // t=1 is the tip (effectiveEnd). t=0 is the tail.
+                // We want thick body, but tapered tip.
+                // Let's taper the last 20% (t > 0.8).
+                let widthFactor = 0.5 + 0.5 * t * t; // Original profile (thickest at tip)
+
+                if (this.config.isComplex && t > 0.8) {
+                    // Taper down to 0.3 at t=1
+                    const taperT = (t - 0.8) / 0.2; // 0 to 1
+                    // Smooth taper
+                    const taper = 1.0 - taperT * 0.7; // 1.0 -> 0.3
+                    widthFactor *= taper;
+                }
+
+                const halfWidth = maxHalfWidth * widthFactor;
 
                 // Vertex 1
                 posAttr.setXYZ(i * 2, x + nx * halfWidth, y + ny * halfWidth, 0);

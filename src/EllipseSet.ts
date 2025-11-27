@@ -125,9 +125,20 @@ export class EllipseSet {
         if (this.config.isComplex) {
             // Page 2: Use BasicMaterial to remove inner shadow, as requested.
             // Also reusing Page 1 materials or creating new BasicMaterial.
-            originMat = originMaterialsPage1[colorIndex].clone();
-            originMat.transparent = true;
-            originMat.opacity = 1.0;
+            // Request 2: Ensure ellipse color and origin color match.
+            // We are using `colorIndex` which is consistent for this ellipse.
+            // However, `originMaterialsPage1` might have been modified by other ellipses if we are not careful?
+            // No, `originMaterialsPage1` is an array of materials.
+            // But wait, in the `else` block (Page 1), we clone and randomize the color.
+            // In Page 2, we clone `originMaterialsPage1[colorIndex]`.
+            // If `originMaterialsPage1` is constant, it should be fine.
+            // But `lineMaterials` is also constant.
+            // Let's explicitly create a new material with the correct color to be safe.
+            originMat = new THREE.MeshBasicMaterial({
+                color: CONFIG.COLORS[colorIndex],
+                transparent: true,
+                opacity: 1.0
+            });
         } else {
             // Page 1: Randomize color
             originMat = originMaterialsPage1[colorIndex].clone();
@@ -245,6 +256,17 @@ export class EllipseSet {
             });
 
             e.updateOriginGeometry(particleGeo);
+
+            // Request 1: Ensure color match.
+            // The line material is e.data.meshes[0].material.
+            // We should sync the origin material color to it.
+            if (this.config.isComplex) {
+                const lineMat = e.data.meshes[0].material as THREE.ShaderMaterial;
+                const originMat = e.data.originMesh.material as THREE.MeshBasicMaterial;
+                if (lineMat.uniforms.color && originMat.color) {
+                    originMat.color.copy(lineMat.uniforms.color.value);
+                }
+            }
         });
     }
 }
