@@ -1,23 +1,48 @@
 import * as THREE from 'three';
 import { State } from './State';
 
-export function createParticleGeometry(baseRadius: number): THREE.ExtrudeGeometry {
-    const numPoints = 12;
+export function createParticleGeometry(baseRadius: number, options: {
+    minPoints?: number;
+    maxPoints?: number;
+    irregularity?: number;
+    depth?: number;
+    bevelEnabled?: boolean;
+} = {}): THREE.ExtrudeGeometry {
+    const minPoints = options.minPoints || 5;
+    const maxPoints = options.maxPoints || 8;
+    const irregularity = options.irregularity !== undefined ? options.irregularity : 0.2; // 0 to 1
+    const depth = options.depth !== undefined ? options.depth : baseRadius * 0.4;
+    const bevelEnabled = options.bevelEnabled !== undefined ? options.bevelEnabled : true;
+
+    const numPoints = Math.floor(minPoints + Math.random() * (maxPoints - minPoints + 1));
     const shape = new THREE.Shape();
+
+    const angleStep = (Math.PI * 2) / numPoints;
+
     for (let i = 0; i < numPoints; i++) {
-        const theta = (i / numPoints) * Math.PI * 2;
-        const r = baseRadius * (0.95 + Math.random() * 0.1);
+        // Base angle with some jitter if needed, but keeping it simple for now:
+        // To make edges uneven, we vary the radius significantly.
+        // To make angles uneven, we could jitter theta.
+
+        // Let's jitter theta slightly for more irregularity
+        const angleJitter = (Math.random() - 0.5) * angleStep * 0.5;
+        const theta = i * angleStep + angleJitter;
+
+        const r = baseRadius * (1.0 + (Math.random() - 0.5) * irregularity * 2);
+
         const x = Math.cos(theta) * r;
         const y = Math.sin(theta) * r;
+
         if (i === 0) shape.moveTo(x, y);
         else shape.lineTo(x, y);
     }
+
     const extrudeSettings = {
         steps: 2,
-        depth: baseRadius * 0.4,
-        bevelEnabled: true,
-        bevelThickness: baseRadius * 0.2,
-        bevelSize: baseRadius * 0.1,
+        depth: depth,
+        bevelEnabled: bevelEnabled,
+        bevelThickness: bevelEnabled ? baseRadius * 0.2 : 0,
+        bevelSize: bevelEnabled ? baseRadius * 0.1 : 0,
         bevelSegments: 3
     };
     return new THREE.ExtrudeGeometry(shape, extrudeSettings);

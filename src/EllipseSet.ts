@@ -49,7 +49,8 @@ export class EllipseSet {
     config: EllipseConfig;
     ellipses: Ellipse[];
     lastCycleTime: number;
-    sharedParticleGeo?: THREE.ExtrudeGeometry;
+    // sharedParticleGeo removed
+
 
     constructor(scene: THREE.Scene, config: EllipseConfig) {
         this.scene = scene;
@@ -57,11 +58,8 @@ export class EllipseSet {
         this.ellipses = [];
         this.lastCycleTime = 0;
 
-        // Shared Geometry for Uniformity in Page 1
-        if (!this.config.isComplex) {
-            const originScaleFactor = this.config.originScale || 0.13;
-            this.sharedParticleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale);
-        }
+        // Shared Geometry removed to allow unique shapes per ellipse
+
 
         this.init();
     }
@@ -121,20 +119,38 @@ export class EllipseSet {
         }
 
         // Origin Geometry
-        let particleGeo: THREE.ExtrudeGeometry;
-        if (this.sharedParticleGeo) {
-            particleGeo = this.sharedParticleGeo;
-        } else {
-            const originScaleFactor = this.config.originScale || 0.13;
-            particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale);
-        }
+        const originScaleFactor = this.config.originScale || 0.13;
+        const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
+            minPoints: this.config.isComplex ? 6 : 5,
+            maxPoints: this.config.isComplex ? 9 : 8,
+            irregularity: this.config.isComplex ? 0.2 : 0.4,
+            bevelEnabled: !this.config.isComplex // No bevel for Page 2 (isComplex) to remove inner shadow
+        });
 
         // Material Selection
         let originMat;
         if (this.config.isComplex) {
-            originMat = originMaterialsPage2[colorIndex].clone();
+            // Page 2: Use BasicMaterial to remove inner shadow, as requested.
+            // Also reusing Page 1 materials or creating new BasicMaterial.
+            originMat = originMaterialsPage1[colorIndex].clone();
+            originMat.transparent = true;
+            originMat.opacity = 1.0;
         } else {
-            originMat = originMaterialsPage1[colorIndex];
+            // Page 1: Randomize color
+            originMat = originMaterialsPage1[colorIndex].clone();
+            const color = originMat.color;
+            const hsl = { h: 0, s: 0, l: 0 };
+            color.getHSL(hsl);
+
+            // Randomize Saturation and Lightness
+            hsl.s += (Math.random() - 0.5) * 0.2;
+            hsl.l += (Math.random() - 0.5) * 0.2;
+
+            // Clamp
+            hsl.s = Math.max(0, Math.min(1, hsl.s));
+            hsl.l = Math.max(0, Math.min(1, hsl.l));
+
+            originMat.color.setHSL(hsl.h, hsl.s, hsl.l);
         }
 
         const originMesh = new THREE.Mesh(particleGeo, originMat);

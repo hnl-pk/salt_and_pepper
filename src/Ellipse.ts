@@ -101,9 +101,31 @@ export class Ellipse {
         }
         d.meshes.forEach(m => m.visible = true);
 
+        // Calculate offset to stop line before origin center
+        // Origin radius is approx config.originScale * config.radiusScale
+        // We want to stop roughly 0.6 * originRadius before the center to be safe but connected
+        const originRadius = (this.config.originScale || 0.13) * this.config.radiusScale;
+        const currentRadius = Math.sqrt(tipX * tipX + tipY * tipY);
+        // Angle offset = arcLength / radius. 
+        // We use a factor (e.g. 0.5) to go halfway into the origin or just to the edge.
+        // Request 2: "Ellipse drawing tip is visible through the origin... smooth connection"
+        // If origin is opaque, we don't see it. If transparent, we see it.
+        // Page 2 origin is transparent (opacity 1.0 but maybe alpha map? No, just opacity).
+        // Wait, if opacity is 1.0, it's opaque.
+        // But user said "visible through the origin".
+        // Maybe the origin is small or the line is thick?
+        // Let's offset by a fraction of the origin radius.
+        const angleOffset = (originRadius * 0.5) / (currentRadius || 1);
+
+        // We are drawing from start (0) to end (negative).
+        // So we want effectiveEnd to be end + angleOffset (less negative).
+        let effectiveEnd = end + angleOffset;
+        if (effectiveEnd > start) effectiveEnd = start;
+
         // Geometry Calculation
         const segments = this.config.segments;
         const maxHalfWidth = this.LINE_WIDTH / 2;
+
 
         // Optimization: Use pre-allocated typed arrays if possible, but here we calculate fresh.
         // To strictly follow "Optimize updateGeometry", we should minimize allocations.
@@ -123,7 +145,7 @@ export class Ellipse {
 
             for (let i = 0; i <= segments; i++) {
                 const t = i / segments;
-                const theta = start + (end - start) * t;
+                const theta = start + (effectiveEnd - start) * t;
 
                 const cosTheta = Math.cos(theta);
                 const sinTheta = Math.sin(theta);

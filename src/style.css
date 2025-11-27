@@ -28,3 +28,8 @@ canvas {
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 }
+
+#blur-overlay.strong {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}

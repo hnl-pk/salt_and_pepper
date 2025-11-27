@@ -45,7 +45,7 @@ function initEllipseAnimation() {
 
     // --- 2. Initialize Sets ---
     const setPage1 = new EllipseSet(scene, {
-        count: 100,
+        count: 300,
         radiusScale: 1.0,
         isCentered: false,
         segments: 32,
@@ -103,14 +103,28 @@ function initEllipseAnimation() {
         }
 
         // --- Blur Switching ---
+        // --- Blur Switching ---
         State.blurTimer += 0.016;
+
+        // Phase Transition: Strong -> Normal
+        if (State.isBlurred && State.blurPhase === 'STRONG' && State.blurTimer > 0.3) {
+            State.blurPhase = 'NORMAL';
+            if (blurOverlay) blurOverlay.classList.remove('strong');
+        }
+
         if (State.blurTimer > State.nextBlurSwitchDuration) {
             State.blurTimer = 0;
-            State.nextBlurSwitchDuration = 5 + Math.random() * 5;
+            State.nextBlurSwitchDuration = 3 + Math.random() * 3; // Shortened duration
 
             State.isBlurred = !State.isBlurred;
             if (blurOverlay) {
                 blurOverlay.style.opacity = State.isBlurred ? '1' : '0';
+                if (State.isBlurred) {
+                    State.blurPhase = 'STRONG';
+                    blurOverlay.classList.add('strong');
+                } else {
+                    blurOverlay.classList.remove('strong');
+                }
             }
         }
 

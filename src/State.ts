@@ -9,6 +9,7 @@ export interface AnimationState {
     nextModeSwitchDuration: number;
     modeSwitchCount: number;
     isBlurred: boolean;
+    blurPhase: 'STRONG' | 'NORMAL';
     blurTimer: number;
     nextBlurSwitchDuration: number;
     hasInteracted: boolean;
@@ -33,8 +34,9 @@ export const State: AnimationState = {
     modeSwitchCount: 0,
 
     isBlurred: true,
+    blurPhase: 'NORMAL' as 'STRONG' | 'NORMAL',
     blurTimer: 0,
-    nextBlurSwitchDuration: 5 + Math.random() * 5,
+    nextBlurSwitchDuration: 3 + Math.random() * 3, // Shortened from 5+5 to 3+3
 
     hasInteracted: false,
 
