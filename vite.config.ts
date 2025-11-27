@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    base: 'https://hnl-pk.github.io/salt_and_pepper/',
+    base: './',
     server: {
         open: true,
         host: true
