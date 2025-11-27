@@ -1,6 +1,6 @@
 import './style.css'
 import * as THREE from 'three';
-import { CONFIG } from './Config';
+
 import { State, Mode } from './State';
 import { EllipseSet } from './EllipseSet';
 import { randomizeShapeConditions } from './Utils';

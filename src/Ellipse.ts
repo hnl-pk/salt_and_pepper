@@ -112,17 +112,14 @@ export class Ellipse {
         // but for now let's stick to the logic and ensure correctness first.
 
         // Actually, let's write directly to the buffer attributes to avoid intermediate array allocation.
-        const mesh = d.meshes[0]; // Assuming all layers share same shape, just different z/rot
-        const posAttr = mesh.geometry.attributes.position;
-        const alphaAttr = mesh.geometry.attributes.alpha;
+
 
         // We need to update ALL meshes
         for (const m of d.meshes) {
             const posAttr = m.geometry.attributes.position;
             const alphaAttr = m.geometry.attributes.alpha;
 
-            let ptr = 0;
-            let alphaPtr = 0;
+
 
             for (let i = 0; i <= segments; i++) {
                 const t = i / segments;
@@ -171,7 +168,7 @@ export class Ellipse {
         this.updateGeometry();
     }
 
-    update(dt: number): boolean {
+    update(_dt: number): boolean {
         const d = this.data;
         if (d.finished) return false;
 
