@@ -1,5 +1,6 @@
 import './style.css'
 import * as THREE from 'three';
+import { CONFIG } from './Config';
 
 import { State, Mode } from './State';
 import { EllipseSet } from './EllipseSet';
@@ -61,13 +62,13 @@ function initEllipseAnimation() {
 
     const setPage2 = new EllipseSet(scene, {
         count: 1,
-        radiusScale: 1.7, // Fixed 1.7x of Page 1
+        radiusScale: 1.7 * 1.5, // Increased by 150%
         isCentered: true,
         segments: 256,
         hasShadow: false,
-        originScale: 0.13 * 0.9 * 1.7, // 1.7x of Page 1 origin
+        originScale: (0.13 * 0.9 * 1.7) / 1.5, // Adjusted to keep origin size constant
         isComplex: true,
-        opacityMultiplier: 5.0 // Increased to force solid look in shader
+        opacityMultiplier: CONFIG.PAGE2_OPACITY_MULT
     });
 
     setPage1.setVisible(true);
