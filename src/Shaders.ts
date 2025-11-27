@@ -39,8 +39,8 @@ export const SHADERS = {
                 float finalAlpha = vAlpha * opacityMultiplier; 
                 if (finalAlpha > 1.0) finalAlpha = 1.0;
                 
-                // Request: Match origin color (solid).
-                // If opacityMultiplier is high (> 2.5), we assume we want a solid line (Page 2).
+                // Match origin color (solid).
+                // If opacityMultiplier is high (> 2.5), we render a solid line (Page 2).
                 // If it's low (~2.0), we keep the texture (Page 1).
                 float noise = pow(combined, 0.8) * intensity;
                 

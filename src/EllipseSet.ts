@@ -227,8 +227,10 @@ export class EllipseSet {
 
             e.updateOriginGeometry(particleGeo);
 
-            // Request: Ensure color match.
-            // We will re-randomize the color for both to ensure they stay in sync and provide variety.
+            e.updateOriginGeometry(particleGeo);
+
+            // Synchronize color between ellipse and origin
+            // Re-randomize color for both to ensure variety and consistency
             if (this.config.isComplex) {
                 const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
                 const newColor = getRandomizedColor(CONFIG.COLORS[colorIndex]);

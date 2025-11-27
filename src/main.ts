@@ -55,18 +55,17 @@ function initEllipseAnimation() {
         opacityMultiplier: 2.0
     });
 
-    // Request 2: Responsive sizing for Page 2.
-    // Update: User requested Page 2 to be smaller (170% of Page 1).
-    // Page 1 radiusScale is 1.0. So Page 2 should be 1.7.
-    // Page 1 originScale is 0.13 * 0.9. So Page 2 should be 0.13 * 0.9 * 1.7.
-
+    // Page 2 Configuration:
+    // - Larger scale (150% of base size)
+    // - Constant origin size (inversely scaled)
+    // - Solid line rendering via high opacity multiplier
     const setPage2 = new EllipseSet(scene, {
         count: 1,
-        radiusScale: 1.7 * 1.5, // Increased by 150%
+        radiusScale: 1.7 * 1.5,
         isCentered: true,
         segments: 256,
         hasShadow: false,
-        originScale: (0.13 * 0.9 * 1.7) / 1.5, // Adjusted to keep origin size constant
+        originScale: (0.13 * 0.9 * 1.7) / 1.5,
         isComplex: true,
         opacityMultiplier: CONFIG.PAGE2_OPACITY_MULT
     });
@@ -88,9 +87,7 @@ function initEllipseAnimation() {
         State.modeTimer += 0.016;
         if (State.modeTimer > State.nextModeSwitchDuration) {
             State.modeTimer = 0;
-            // Request 3: More random interval.
-            // Previous: 5 + random * 5 (5-10s).
-            // New: 4 + random * 12 (4-16s).
+            // Random interval between 4 and 16 seconds
             State.nextModeSwitchDuration = 4 + Math.random() * 12;
 
             if (State.currentMode === Mode.PAGE1) {
