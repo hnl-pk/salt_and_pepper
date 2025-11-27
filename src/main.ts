@@ -50,17 +50,26 @@ function initEllipseAnimation() {
         isCentered: false,
         segments: 32,
         hasShadow: false,
-        originScale: 0.13 * 0.9, // Reduced by 10%
+        originScale: 0.13 * 0.9,
         opacityMultiplier: 2.0
     });
 
+    // Request 2: Responsive sizing for Page 2.
+    const getPage2Scale = () => {
+        const minDim = Math.min(window.innerWidth, window.innerHeight);
+        // Base scale 9.0 is good for desktop (e.g. 1080p).
+        // For mobile (e.g. 375px width), we need much smaller.
+        // Let's use a reference dimension, say 1000px.
+        return 9.0 * (minDim / 1000) * 1.2; // 1.2 factor to keep it relatively large but fitting
+    };
+
     const setPage2 = new EllipseSet(scene, {
         count: 1,
-        radiusScale: 9.0,
+        radiusScale: getPage2Scale(),
         isCentered: true,
         segments: 256,
         hasShadow: false,
-        originScale: 0.13 * 0.7 * 0.7, // Reduced by 30% from previous (0.7)
+        originScale: 0.13 * 0.7 * 0.7,
         isComplex: true,
         opacityMultiplier: 3.0
     });
@@ -82,7 +91,10 @@ function initEllipseAnimation() {
         State.modeTimer += 0.016;
         if (State.modeTimer > State.nextModeSwitchDuration) {
             State.modeTimer = 0;
-            State.nextModeSwitchDuration = 5 + Math.random() * 5;
+            // Request 3: More random interval.
+            // Previous: 5 + random * 5 (5-10s).
+            // New: 4 + random * 12 (4-16s).
+            State.nextModeSwitchDuration = 4 + Math.random() * 12;
 
             if (State.currentMode === Mode.PAGE1) {
                 State.currentMode = Mode.PAGE2;
@@ -150,6 +162,9 @@ function initEllipseAnimation() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Update Page 2 scale on resize
+        setPage2.config.radiusScale = getPage2Scale();
     });
 }
 

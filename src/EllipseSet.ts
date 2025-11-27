@@ -257,14 +257,24 @@ export class EllipseSet {
 
             e.updateOriginGeometry(particleGeo);
 
-            // Request 1: Ensure color match.
-            // The line material is e.data.meshes[0].material.
-            // We should sync the origin material color to it.
+            // Request: Ensure color match.
+            // We will re-randomize the color for both to ensure they stay in sync and provide variety.
             if (this.config.isComplex) {
-                const lineMat = e.data.meshes[0].material as THREE.ShaderMaterial;
+                const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
+                const newColor = new THREE.Color(CONFIG.COLORS[colorIndex]);
+
+                // Update Line Meshes
+                e.data.meshes.forEach(m => {
+                    const mat = m.material as THREE.ShaderMaterial;
+                    if (mat.uniforms && mat.uniforms.color) {
+                        mat.uniforms.color.value.copy(newColor);
+                    }
+                });
+
+                // Update Origin Mesh
                 const originMat = e.data.originMesh.material as THREE.MeshBasicMaterial;
-                if (lineMat.uniforms.color && originMat.color) {
-                    originMat.color.copy(lineMat.uniforms.color.value);
+                if (originMat.color) {
+                    originMat.color.copy(newColor);
                 }
             }
         });

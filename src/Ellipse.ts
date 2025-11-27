@@ -181,18 +181,42 @@ export class Ellipse {
 
                 const nx = ty; const ny = -tx;
 
-                // Request 3: Tapering the tip.
-                // t=1 is the tip (effectiveEnd). t=0 is the tail.
-                // We want thick body, but tapered tip.
-                // Let's taper the last 20% (t > 0.8).
+                // Request: Smoother connection but not too thin.
+                // We want to taper only near the connection point.
+                // We calculate the taper start based on a fixed angle distance, not a percentage of t.
+
+                // Calculate total angle length of the drawn line
+                const totalAngle = Math.abs(start - effectiveEnd);
+
+                // We want to start tapering a certain "distance" before the tip.
+                // angleOffset corresponds to ~0.8 * originRadius.
+                // Let's start tapering at ~2.5 * angleOffset (approx 2.0 * originRadius).
+                // This ensures the taper starts before entering the origin.
+                const taperAngle = angleOffset * 2.5;
+
+                // Calculate t threshold
+                // t goes from 0 to 1. 1 is at effectiveEnd.
+                // The segment length is totalAngle.
+                // We want the last taperAngle portion.
+                // threshold = 1.0 - (taperAngle / totalAngle)
+                let taperThreshold = 0.85; // Default fallback
+                if (totalAngle > 0.001) {
+                    taperThreshold = Math.max(0, 1.0 - (taperAngle / totalAngle));
+                }
+
                 let widthFactor = 0.5 + 0.5 * t * t; // Original profile (thickest at tip)
 
-                if (this.config.isComplex && t > 0.8) {
-                    // Taper down to 0.3 at t=1
-                    const taperT = (t - 0.8) / 0.2; // 0 to 1
-                    // Smooth taper
-                    const taper = 1.0 - taperT * 0.7; // 1.0 -> 0.3
-                    widthFactor *= taper;
+                if (this.config.isComplex && t > taperThreshold) {
+                    // Taper down to 0.6 at t=1 (instead of 0.1)
+                    // This keeps it thick enough to match the origin but thin enough to not stick out.
+                    const taperRange = 1.0 - taperThreshold;
+                    if (taperRange > 0.0001) {
+                        const taperT = (t - taperThreshold) / taperRange; // 0 to 1
+                        // Smooth taper from 1.0 to 0.6
+                        const targetScale = 0.6;
+                        const taper = 1.0 - taperT * (1.0 - targetScale);
+                        widthFactor *= taper;
+                    }
                 }
 
                 const halfWidth = maxHalfWidth * widthFactor;
