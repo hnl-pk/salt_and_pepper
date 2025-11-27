@@ -263,6 +263,15 @@ export class EllipseSet {
                 const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
                 const newColor = new THREE.Color(CONFIG.COLORS[colorIndex]);
 
+                // Request: Add variation (same as Page 1)
+                const hsl = { h: 0, s: 0, l: 0 };
+                newColor.getHSL(hsl);
+                hsl.s += (Math.random() - 0.5) * 0.2;
+                hsl.l += (Math.random() - 0.5) * 0.2;
+                hsl.s = Math.max(0, Math.min(1, hsl.s));
+                hsl.l = Math.max(0, Math.min(1, hsl.l));
+                newColor.setHSL(hsl.h, hsl.s, hsl.l);
+
                 // Update Line Meshes
                 e.data.meshes.forEach(m => {
                     const mat = m.material as THREE.ShaderMaterial;

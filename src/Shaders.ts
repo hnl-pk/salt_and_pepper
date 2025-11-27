@@ -39,7 +39,17 @@ export const SHADERS = {
                 float finalAlpha = vAlpha * opacityMultiplier; 
                 if (finalAlpha > 1.0) finalAlpha = 1.0;
                 
-                gl_FragColor = vec4(color, finalAlpha * pow(combined, 0.8) * intensity);
+                // Request: Match origin color (solid).
+                // If opacityMultiplier is high (> 2.5), we assume we want a solid line (Page 2).
+                // If it's low (~2.0), we keep the texture (Page 1).
+                float noise = pow(combined, 0.8) * intensity;
+                
+                float solidness = clamp((opacityMultiplier - 2.5) / 1.0, 0.0, 1.0);
+                float effectiveNoise = mix(noise, 1.0, solidness);
+                
+                gl_FragColor = vec4(color, finalAlpha * effectiveNoise);
+
+                #include <encodings_fragment>
             }
         `
     }

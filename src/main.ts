@@ -71,7 +71,7 @@ function initEllipseAnimation() {
         hasShadow: false,
         originScale: 0.13 * 0.7 * 0.7,
         isComplex: true,
-        opacityMultiplier: 3.0
+        opacityMultiplier: 5.0 // Increased to force solid look in shader
     });
 
     setPage1.setVisible(true);
