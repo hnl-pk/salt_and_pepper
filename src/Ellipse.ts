@@ -40,7 +40,7 @@ export class Ellipse {
         // Let's make LINE_WIDTH closer to origin diameter or at least significantly thicker.
         // Let's try 1.5x the origin scale factor as a base width multiplier.
 
-        const originScale = this.config.originScale || 0.13;
+        const originScale = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
         if (this.config.isComplex) {
             // Page 2
             // Request 2: Restore thickness.
@@ -64,8 +64,8 @@ export class Ellipse {
         // Add lines
         meshes.forEach((m, i) => {
             container.add(m);
-            m.position.z = i * 0.002;
-            m.rotation.z = (Math.random() - 0.5) * 0.05;
+            m.position.z = i * CONFIG.Z_SPACING;
+            m.rotation.z = (Math.random() - 0.5) * CONFIG.ROTATION_JITTER;
         });
 
         // Add origin
@@ -75,7 +75,7 @@ export class Ellipse {
         } else {
             originMesh.rotation.z = Math.random() * Math.PI * 2;
         }
-        originMesh.position.set(initialX, 0, 0.02);
+        originMesh.position.set(initialX, 0, CONFIG.ORIGIN_Z);
 
         // Visibility
         container.visible = true;
@@ -109,7 +109,7 @@ export class Ellipse {
         // Update Origin Position
         const tipX = a * Math.cos(end);
         const tipY = b * Math.sin(end);
-        d.originMesh.position.set(tipX, tipY, 0.02);
+        d.originMesh.position.set(tipX, tipY, CONFIG.ORIGIN_Z);
 
         // Page 2 Opacity Logic
         if (this.config.isComplex) {
@@ -132,7 +132,7 @@ export class Ellipse {
         // We restore thickness (2.5x) but need to handle protrusion.
         // We will taper the tip of the line so it fits into the origin.
         // We stop slightly inside the origin.
-        const originRadius = (this.config.originScale || 0.13) * this.config.radiusScale;
+        const originRadius = (this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE) * this.config.radiusScale;
         const currentRadius = Math.sqrt(tipX * tipX + tipY * tipY);
         // Stop at 0.8 * radius (deep inside)
         const angleOffset = (originRadius * 0.8) / (currentRadius || 1);

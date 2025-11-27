@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from './Config';
 import { State } from './State';
 import { SHADERS } from './Shaders';
-import { createParticleGeometry } from './Utils';
+import { createParticleGeometry, getRandomizedColor } from './Utils';
 import { Ellipse } from './Ellipse';
 
 // Materials
@@ -10,7 +10,7 @@ const lineMaterials = CONFIG.COLORS.map(color => {
     return new THREE.ShaderMaterial({
         uniforms: {
             color: { value: new THREE.Color(color) },
-            opacityMultiplier: { value: 3.0 }
+            opacityMultiplier: { value: CONFIG.PAGE1_OPACITY_MULT }
         },
         vertexShader: SHADERS.line.vertex,
         fragmentShader: SHADERS.line.fragment,
@@ -19,8 +19,6 @@ const lineMaterials = CONFIG.COLORS.map(color => {
         depthWrite: false
     });
 });
-
-
 
 const originMaterialsPage1 = CONFIG.COLORS.map(color => new THREE.MeshBasicMaterial({
     color: color
@@ -42,18 +40,12 @@ export class EllipseSet {
     config: EllipseConfig;
     ellipses: Ellipse[];
     lastCycleTime: number;
-    // sharedParticleGeo removed
-
 
     constructor(scene: THREE.Scene, config: EllipseConfig) {
         this.scene = scene;
         this.config = config;
         this.ellipses = [];
         this.lastCycleTime = 0;
-
-        // Shared Geometry removed to allow unique shapes per ellipse
-
-
         this.init();
     }
 
@@ -74,7 +66,7 @@ export class EllipseSet {
 
         for (let i = 0; i < numLayers; i++) {
             const mat = lineMaterials[colorIndex].clone();
-            mat.uniforms.opacityMultiplier.value = this.config.opacityMultiplier || 3.0;
+            mat.uniforms.opacityMultiplier.value = this.config.opacityMultiplier || CONFIG.PAGE1_OPACITY_MULT;
             if (this.config.isComplex) {
                 mat.uniforms.opacityMultiplier.value *= (0.6 + Math.random() * 0.4);
             }
@@ -112,28 +104,18 @@ export class EllipseSet {
         }
 
         // Origin Geometry
-        const originScaleFactor = this.config.originScale || 0.13;
+        const originScaleFactor = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
         const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
             minPoints: this.config.isComplex ? 6 : 5,
             maxPoints: this.config.isComplex ? 9 : 8,
             irregularity: this.config.isComplex ? 0.2 : 0.4,
-            bevelEnabled: !this.config.isComplex // No bevel for Page 2 (isComplex) to remove inner shadow
+            bevelEnabled: !this.config.isComplex
         });
 
         // Material Selection
         let originMat;
         if (this.config.isComplex) {
-            // Page 2: Use BasicMaterial to remove inner shadow, as requested.
-            // Also reusing Page 1 materials or creating new BasicMaterial.
-            // Request 2: Ensure ellipse color and origin color match.
-            // We are using `colorIndex` which is consistent for this ellipse.
-            // However, `originMaterialsPage1` might have been modified by other ellipses if we are not careful?
-            // No, `originMaterialsPage1` is an array of materials.
-            // But wait, in the `else` block (Page 1), we clone and randomize the color.
-            // In Page 2, we clone `originMaterialsPage1[colorIndex]`.
-            // If `originMaterialsPage1` is constant, it should be fine.
-            // But `lineMaterials` is also constant.
-            // Let's explicitly create a new material with the correct color to be safe.
+            // Page 2: Use BasicMaterial
             originMat = new THREE.MeshBasicMaterial({
                 color: CONFIG.COLORS[colorIndex],
                 transparent: true,
@@ -142,19 +124,7 @@ export class EllipseSet {
         } else {
             // Page 1: Randomize color
             originMat = originMaterialsPage1[colorIndex].clone();
-            const color = originMat.color;
-            const hsl = { h: 0, s: 0, l: 0 };
-            color.getHSL(hsl);
-
-            // Randomize Saturation and Lightness
-            hsl.s += (Math.random() - 0.5) * 0.2;
-            hsl.l += (Math.random() - 0.5) * 0.2;
-
-            // Clamp
-            hsl.s = Math.max(0, Math.min(1, hsl.s));
-            hsl.l = Math.max(0, Math.min(1, hsl.l));
-
-            originMat.color.setHSL(hsl.h, hsl.s, hsl.l);
+            originMat.color = getRandomizedColor(originMat.color);
         }
 
         const originMesh = new THREE.Mesh(particleGeo, originMat);
@@ -247,7 +217,7 @@ export class EllipseSet {
     regenerateOrigins() {
         this.ellipses.forEach(e => {
             // Generate new geometry
-            const originScaleFactor = this.config.originScale || 0.13;
+            const originScaleFactor = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
             const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
                 minPoints: this.config.isComplex ? 6 : 5,
                 maxPoints: this.config.isComplex ? 9 : 8,
@@ -261,16 +231,7 @@ export class EllipseSet {
             // We will re-randomize the color for both to ensure they stay in sync and provide variety.
             if (this.config.isComplex) {
                 const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
-                const newColor = new THREE.Color(CONFIG.COLORS[colorIndex]);
-
-                // Request: Add variation (same as Page 1)
-                const hsl = { h: 0, s: 0, l: 0 };
-                newColor.getHSL(hsl);
-                hsl.s += (Math.random() - 0.5) * 0.2;
-                hsl.l += (Math.random() - 0.5) * 0.2;
-                hsl.s = Math.max(0, Math.min(1, hsl.s));
-                hsl.l = Math.max(0, Math.min(1, hsl.l));
-                newColor.setHSL(hsl.h, hsl.s, hsl.l);
+                const newColor = getRandomizedColor(CONFIG.COLORS[colorIndex]);
 
                 // Update Line Meshes
                 e.data.meshes.forEach(m => {

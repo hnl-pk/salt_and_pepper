@@ -61,3 +61,18 @@ export function randomizeShapeConditions() {
 
     if (Math.random() > 0.5) State.drift.speed *= -1;
 }
+
+export function getRandomizedColor(baseColor: THREE.Color | number): THREE.Color {
+    const color = new THREE.Color(baseColor);
+    const hsl = { h: 0, s: 0, l: 0 };
+    color.getHSL(hsl);
+
+    hsl.s += (Math.random() - 0.5) * 0.2;
+    hsl.l += (Math.random() - 0.5) * 0.2;
+
+    hsl.s = Math.max(0, Math.min(1, hsl.s));
+    hsl.l = Math.max(0, Math.min(1, hsl.l));
+
+    color.setHSL(hsl.h, hsl.s, hsl.l);
+    return color;
+}
