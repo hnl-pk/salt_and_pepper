@@ -55,21 +55,17 @@ function initEllipseAnimation() {
     });
 
     // Request 2: Responsive sizing for Page 2.
-    const getPage2Scale = () => {
-        const minDim = Math.min(window.innerWidth, window.innerHeight);
-        // Base scale 9.0 is good for desktop (e.g. 1080p).
-        // For mobile (e.g. 375px width), we need much smaller.
-        // Let's use a reference dimension, say 1000px.
-        return 9.0 * (minDim / 1000) * 1.2; // 1.2 factor to keep it relatively large but fitting
-    };
+    // Update: User requested Page 2 to be smaller (170% of Page 1).
+    // Page 1 radiusScale is 1.0. So Page 2 should be 1.7.
+    // Page 1 originScale is 0.13 * 0.9. So Page 2 should be 0.13 * 0.9 * 1.7.
 
     const setPage2 = new EllipseSet(scene, {
         count: 1,
-        radiusScale: getPage2Scale(),
+        radiusScale: 1.7, // Fixed 1.7x of Page 1
         isCentered: true,
         segments: 256,
         hasShadow: false,
-        originScale: 0.13 * 0.7 * 0.7,
+        originScale: 0.13 * 0.9 * 1.7, // 1.7x of Page 1 origin
         isComplex: true,
         opacityMultiplier: 5.0 // Increased to force solid look in shader
     });
@@ -162,9 +158,6 @@ function initEllipseAnimation() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-
-        // Update Page 2 scale on resize
-        setPage2.config.radiusScale = getPage2Scale();
     });
 }
 
