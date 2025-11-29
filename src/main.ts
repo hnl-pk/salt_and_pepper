@@ -122,11 +122,11 @@ function initEllipseAnimation() {
             State.isBlurred = !State.isBlurred;
 
             if (State.isBlurred) {
-                // Blur Phase: Keep long (8-16s)
-                State.nextBlurSwitchDuration = 8 + Math.random() * 8;
+                // Blur Phase: Long duration (6-12s)
+                State.nextBlurSwitchDuration = 7 + Math.random() * 5;
             } else {
-                // Normal Phase: Shorten (3-6s) to make blur feel relatively longer
-                State.nextBlurSwitchDuration = 3 + Math.random() * 3;
+                // Normal Phase: Shorter duration (3-8s) to increase relative blur time
+                State.nextBlurSwitchDuration = 3 + Math.random() * 5;
             }
             if (blurOverlay) {
                 blurOverlay.style.opacity = State.isBlurred ? '1' : '0';

@@ -23,6 +23,7 @@ export class Ellipse {
     data: EllipseData;
     config: EllipseConfig;
     LINE_WIDTH: number;
+    taperEnabled: boolean;
 
     constructor(
         config: EllipseConfig,
@@ -36,6 +37,7 @@ export class Ellipse {
     ) {
         this.config = config;
         this.LINE_WIDTH = lineWidth;
+        this.taperEnabled = taperEnabled;
 
         // Container Setup
         const container = new THREE.Object3D();
@@ -84,10 +86,10 @@ export class Ellipse {
             finished: false
         };
 
-        this.updateGeometry(taperEnabled);
+        this.updateGeometry();
     }
 
-    updateGeometry(taperEnabled: boolean = false) {
+    updateGeometry() {
         const d = this.data;
         const start = d.currentStartAngle;
         const end = d.currentEndAngle;
@@ -171,7 +173,7 @@ export class Ellipse {
 
                 let widthFactor = 0.5 + 0.5 * t * t; // Original profile (thickest at tip)
 
-                if (taperEnabled && t > taperThreshold) {
+                if (this.taperEnabled && t > taperThreshold) {
                     // Taper down to 0.6 at the tip to match origin width without protruding
                     const taperRange = 1.0 - taperThreshold;
                     if (taperRange > 0.0001) {
@@ -209,7 +211,7 @@ export class Ellipse {
         d.finished = false;
 
         d.container.rotation.z = d.rotation;
-        this.updateGeometry(this.config.taperEnabled);
+        this.updateGeometry();
     }
 
     update(_dt: number): boolean {
@@ -236,7 +238,7 @@ export class Ellipse {
 
         if (d.currentStartAngle <= d.targetEndAngle) d.finished = true;
 
-        if (animating) this.updateGeometry(this.config.taperEnabled);
+        if (animating) this.updateGeometry();
 
         return animating;
     }

@@ -36,7 +36,7 @@ export const State: AnimationState = {
     isBlurred: true,
     blurPhase: 'NORMAL' as 'STRONG' | 'NORMAL',
     blurTimer: 0,
-    nextBlurSwitchDuration: 8 + Math.random() * 8,
+    nextBlurSwitchDuration: 6 + Math.random() * 6,
 
     hasInteracted: false,
 
