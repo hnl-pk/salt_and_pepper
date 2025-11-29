@@ -32,10 +32,12 @@ export interface EllipseConfig {
     hasShadow: boolean;
     originScale: number;
     opacityMultiplier: number;
-    isComplex?: boolean;
+    // Removed isComplex, replaced by specific flags if needed, or handled by subclass
+    taperEnabled?: boolean;
+    forceSolidLine?: boolean;
 }
 
-export class EllipseSet {
+export abstract class EllipseSetBase {
     scene: THREE.Scene;
     config: EllipseConfig;
     ellipses: Ellipse[];
@@ -55,99 +57,8 @@ export class EllipseSet {
         }
     }
 
-    createEllipse() {
-        const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
-
-        const numLayers = this.config.isComplex ? 3 : 1;
-        const meshes: THREE.Mesh[] = [];
-
-        const segments = this.config.segments;
-        const vertexCount = (segments + 1) * 2;
-
-        for (let i = 0; i < numLayers; i++) {
-            const mat = lineMaterials[colorIndex].clone();
-            mat.uniforms.opacityMultiplier.value = this.config.opacityMultiplier || CONFIG.PAGE1_OPACITY_MULT;
-            if (this.config.isComplex) {
-                mat.uniforms.opacityMultiplier.value *= (0.6 + Math.random() * 0.4);
-            }
-
-            const geometry = new THREE.BufferGeometry();
-
-            const positions = new Float32Array(vertexCount * 3);
-            const alphas = new Float32Array(vertexCount);
-            const sides = new Float32Array(vertexCount);
-            const progresses = new Float32Array(vertexCount);
-            const indices: number[] = [];
-
-            for (let j = 0; j <= segments; j++) {
-                const t = j / segments;
-                sides[j * 2] = 0.0;
-                sides[j * 2 + 1] = 1.0;
-                progresses[j * 2] = t;
-                progresses[j * 2 + 1] = t;
-
-                if (j < segments) {
-                    const base = j * 2;
-                    indices.push(base, base + 1, base + 2);
-                    indices.push(base + 2, base + 1, base + 3);
-                }
-            }
-
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
-            geometry.setAttribute('side', new THREE.BufferAttribute(sides, 1));
-            geometry.setAttribute('progress', new THREE.BufferAttribute(progresses, 1));
-            geometry.setIndex(indices);
-
-            const mesh = new THREE.Mesh(geometry, mat);
-            meshes.push(mesh);
-        }
-
-        // Origin Geometry
-        const originScaleFactor = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
-        const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
-            minPoints: this.config.isComplex ? 6 : 5,
-            maxPoints: this.config.isComplex ? 9 : 8,
-            irregularity: this.config.isComplex ? 0.2 : 0.4,
-            bevelEnabled: !this.config.isComplex
-        });
-
-        // Material Selection
-        let originMat;
-        if (this.config.isComplex) {
-            // Page 2: Use BasicMaterial
-            originMat = new THREE.MeshBasicMaterial({
-                color: CONFIG.COLORS[colorIndex],
-                transparent: true,
-                opacity: 1.0
-            });
-        } else {
-            // Page 1: Randomize color
-            originMat = originMaterialsPage1[colorIndex].clone();
-            originMat.color = getRandomizedColor(originMat.color);
-        }
-
-        const originMesh = new THREE.Mesh(particleGeo, originMat);
-
-        let xPos, yPos;
-        if (this.config.isCentered) {
-            xPos = 0; yPos = 0;
-        } else {
-            xPos = (Math.random() - 0.5) * 36;
-            yPos = (Math.random() - 0.5) * 16;
-        }
-
-        const initialXRadius = State.interactionTarget.xRadius * this.config.radiusScale;
-        const initialYRadius = State.interactionTarget.yRadius * this.config.radiusScale;
-        const initialRotation = State.interactionTarget.rotation;
-
-        const ellipse = new Ellipse(this.config, meshes, originMesh, initialXRadius, initialYRadius, initialRotation);
-
-        ellipse.data.container.position.set(xPos, yPos, 0);
-
-        this.scene.add(ellipse.data.container);
-        this.ellipses.push(ellipse);
-    }
+    abstract createEllipse(): void;
+    abstract regenerateOrigins(): void;
 
     updateCycle() {
         if (!State.hasInteracted) return;
@@ -213,42 +124,243 @@ export class EllipseSet {
             }
         });
     }
+}
+
+export class Page1EllipseSet extends EllipseSetBase {
+    createEllipse() {
+        const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
+        const meshes: THREE.Mesh[] = [];
+
+        const segments = this.config.segments;
+        const vertexCount = (segments + 1) * 2;
+
+        // Create Line Meshes
+        const mat = lineMaterials[colorIndex].clone();
+        mat.uniforms.opacityMultiplier.value = this.config.opacityMultiplier || CONFIG.PAGE1_OPACITY_MULT;
+
+        const geometry = this.createLineGeometry(vertexCount, segments);
+        const mesh = new THREE.Mesh(geometry, mat);
+        meshes.push(mesh);
+
+        // Origin Geometry
+        const originScaleFactor = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
+        const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
+            minPoints: 5,
+            maxPoints: 8,
+            irregularity: 0.4,
+            bevelEnabled: true
+        });
+
+        // Material Selection (Page 1: Randomize color)
+        const originMat = originMaterialsPage1[colorIndex].clone();
+        originMat.color = getRandomizedColor(originMat.color);
+
+        const originMesh = new THREE.Mesh(particleGeo, originMat);
+
+        // Position (Random)
+        let xPos, yPos;
+        if (this.config.isCentered) {
+            xPos = 0; yPos = 0;
+        } else {
+            xPos = (Math.random() - 0.5) * 36;
+            yPos = (Math.random() - 0.5) * 16;
+        }
+
+        const initialXRadius = State.interactionTarget.xRadius * this.config.radiusScale;
+        const initialYRadius = State.interactionTarget.yRadius * this.config.radiusScale;
+        const initialRotation = State.interactionTarget.rotation;
+
+        // Calculate Line Width for Page 1
+        const lineWidth = originScaleFactor * this.config.radiusScale * 2.0;
+
+        const ellipse = new Ellipse(
+            this.config,
+            meshes,
+            originMesh,
+            initialXRadius,
+            initialYRadius,
+            initialRotation,
+            lineWidth,
+            false // No tapering for Page 1? Or was it? It was "isComplex" check.
+        );
+
+        ellipse.data.container.position.set(xPos, yPos, 0);
+        this.scene.add(ellipse.data.container);
+        this.ellipses.push(ellipse);
+    }
+
+    regenerateOrigins() {
+        // Page 1 doesn't usually regenerate origins in the same way, but if needed:
+        this.ellipses.forEach(e => {
+            const originScaleFactor = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
+            const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
+                minPoints: 5,
+                maxPoints: 8,
+                irregularity: 0.4,
+                bevelEnabled: true
+            });
+            e.updateOriginGeometry(particleGeo);
+
+            // Randomize color again?
+            const originMat = e.data.originMesh.material as THREE.MeshBasicMaterial;
+            originMat.color = getRandomizedColor(originMat.color);
+        });
+    }
+
+    private createLineGeometry(vertexCount: number, segments: number): THREE.BufferGeometry {
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(vertexCount * 3);
+        const alphas = new Float32Array(vertexCount);
+        const sides = new Float32Array(vertexCount);
+        const progresses = new Float32Array(vertexCount);
+        const indices: number[] = [];
+
+        for (let j = 0; j <= segments; j++) {
+            const t = j / segments;
+            sides[j * 2] = 0.0;
+            sides[j * 2 + 1] = 1.0;
+            progresses[j * 2] = t;
+            progresses[j * 2 + 1] = t;
+
+            if (j < segments) {
+                const base = j * 2;
+                indices.push(base, base + 1, base + 2);
+                indices.push(base + 2, base + 1, base + 3);
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
+        geometry.setAttribute('side', new THREE.BufferAttribute(sides, 1));
+        geometry.setAttribute('progress', new THREE.BufferAttribute(progresses, 1));
+        geometry.setIndex(indices);
+        return geometry;
+    }
+}
+
+export class Page2EllipseSet extends EllipseSetBase {
+    createEllipse() {
+        const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
+        const numLayers = 3;
+        const meshes: THREE.Mesh[] = [];
+
+        const segments = this.config.segments;
+        const vertexCount = (segments + 1) * 2;
+
+        for (let i = 0; i < numLayers; i++) {
+            const mat = lineMaterials[colorIndex].clone();
+            mat.uniforms.opacityMultiplier.value = this.config.opacityMultiplier || CONFIG.PAGE2_OPACITY_MULT;
+            mat.uniforms.opacityMultiplier.value *= (0.6 + Math.random() * 0.4);
+
+            const geometry = this.createLineGeometry(vertexCount, segments);
+            const mesh = new THREE.Mesh(geometry, mat);
+            meshes.push(mesh);
+        }
+
+        // Origin Geometry
+        const originScaleFactor = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
+        const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
+            minPoints: 6,
+            maxPoints: 9,
+            irregularity: 0.2,
+            bevelEnabled: false
+        });
+
+        // Material Selection (Page 2: Solid, synced color)
+        const originMat = new THREE.MeshBasicMaterial({
+            color: CONFIG.COLORS[colorIndex],
+            transparent: true,
+            opacity: 1.0
+        });
+
+        const originMesh = new THREE.Mesh(particleGeo, originMat);
+        originMesh.rotation.z = Math.random() * Math.PI * 2;
+
+        // Position (Centered)
+        let xPos = 0, yPos = 0;
+
+        const initialXRadius = State.interactionTarget.xRadius * this.config.radiusScale;
+        const initialYRadius = State.interactionTarget.yRadius * this.config.radiusScale;
+        const initialRotation = State.interactionTarget.rotation;
+
+        // Calculate Line Width for Page 2
+        const lineWidth = originScaleFactor * this.config.radiusScale * 2.5;
+
+        const ellipse = new Ellipse(
+            this.config,
+            meshes,
+            originMesh,
+            initialXRadius,
+            initialYRadius,
+            initialRotation,
+            lineWidth,
+            true // Tapering enabled
+        );
+
+        ellipse.data.container.position.set(xPos, yPos, 0);
+        this.scene.add(ellipse.data.container);
+        this.ellipses.push(ellipse);
+    }
 
     regenerateOrigins() {
         this.ellipses.forEach(e => {
-            // Generate new geometry
             const originScaleFactor = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
             const particleGeo = createParticleGeometry(originScaleFactor * this.config.radiusScale, {
-                minPoints: this.config.isComplex ? 6 : 5,
-                maxPoints: this.config.isComplex ? 9 : 8,
-                irregularity: this.config.isComplex ? 0.2 : 0.4,
-                bevelEnabled: !this.config.isComplex
+                minPoints: 6,
+                maxPoints: 9,
+                irregularity: 0.2,
+                bevelEnabled: false
             });
 
             e.updateOriginGeometry(particleGeo);
 
-            e.updateOriginGeometry(particleGeo);
+            // Synchronize color
+            const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
+            const newColor = getRandomizedColor(CONFIG.COLORS[colorIndex]);
 
-            // Synchronize color between ellipse and origin
-            // Re-randomize color for both to ensure variety and consistency
-            if (this.config.isComplex) {
-                const colorIndex = Math.floor(Math.random() * CONFIG.COLORS.length);
-                const newColor = getRandomizedColor(CONFIG.COLORS[colorIndex]);
-
-                // Update Line Meshes
-                e.data.meshes.forEach(m => {
-                    const mat = m.material as THREE.ShaderMaterial;
-                    if (mat.uniforms && mat.uniforms.color) {
-                        mat.uniforms.color.value.copy(newColor);
-                    }
-                });
-
-                // Update Origin Mesh
-                const originMat = e.data.originMesh.material as THREE.MeshBasicMaterial;
-                if (originMat.color) {
-                    originMat.color.copy(newColor);
+            // Update Line Meshes
+            e.data.meshes.forEach(m => {
+                const mat = m.material as THREE.ShaderMaterial;
+                if (mat.uniforms && mat.uniforms.color) {
+                    mat.uniforms.color.value.copy(newColor);
                 }
+            });
+
+            // Update Origin Mesh
+            const originMat = e.data.originMesh.material as THREE.MeshBasicMaterial;
+            if (originMat.color) {
+                originMat.color.copy(newColor);
             }
         });
+    }
+
+    private createLineGeometry(vertexCount: number, segments: number): THREE.BufferGeometry {
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(vertexCount * 3);
+        const alphas = new Float32Array(vertexCount);
+        const sides = new Float32Array(vertexCount);
+        const progresses = new Float32Array(vertexCount);
+        const indices: number[] = [];
+
+        for (let j = 0; j <= segments; j++) {
+            const t = j / segments;
+            sides[j * 2] = 0.0;
+            sides[j * 2 + 1] = 1.0;
+            progresses[j * 2] = t;
+            progresses[j * 2 + 1] = t;
+
+            if (j < segments) {
+                const base = j * 2;
+                indices.push(base, base + 1, base + 2);
+                indices.push(base + 2, base + 1, base + 3);
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
+        geometry.setAttribute('side', new THREE.BufferAttribute(sides, 1));
+        geometry.setAttribute('progress', new THREE.BufferAttribute(progresses, 1));
+        geometry.setIndex(indices);
+        return geometry;
     }
 }

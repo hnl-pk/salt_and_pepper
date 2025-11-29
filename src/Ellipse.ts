@@ -24,22 +24,23 @@ export class Ellipse {
     config: EllipseConfig;
     LINE_WIDTH: number;
 
-    constructor(config: EllipseConfig, meshes: THREE.Mesh[], originMesh: THREE.Mesh, initialX: number, initialY: number, initialRot: number) {
+    constructor(
+        config: EllipseConfig,
+        meshes: THREE.Mesh[],
+        originMesh: THREE.Mesh,
+        initialX: number,
+        initialY: number,
+        initialRot: number,
+        lineWidth: number,
+        taperEnabled: boolean
+    ) {
         this.config = config;
-
-        const originScale = this.config.originScale || CONFIG.DEFAULT_ORIGIN_SCALE;
-        if (this.config.isComplex) {
-            // Page 2: Thicker line relative to scale
-            this.LINE_WIDTH = originScale * this.config.radiusScale * 2.5;
-        } else {
-            // Page 1: Standard thickness
-            this.LINE_WIDTH = originScale * this.config.radiusScale * 2.0;
-        }
+        this.LINE_WIDTH = lineWidth;
 
         // Container Setup
         const container = new THREE.Object3D();
 
-        // Position (Random or Centered logic handled by caller, passed here?) 
+        // Position (Random or Centered logic handled by caller, passed here?)
         // Actually, let's keep position logic in EllipseSet or pass it in.
         // For now, we assume the caller sets the container position.
 
@@ -54,11 +55,14 @@ export class Ellipse {
 
         // Add origin
         container.add(originMesh);
-        if (!this.config.isComplex) {
-            originMesh.rotation.z = 0;
-        } else {
-            originMesh.rotation.z = Math.random() * Math.PI * 2;
-        }
+        // Rotation is now handled by the caller (EllipseSet) before passing originMesh
+        // or we can keep it here if we pass a flag.
+        // Actually, Page 2 sets rotation to random, Page 1 to 0.
+        // Let's assume the caller sets it on the mesh before passing it in.
+        // But wait, Page 1 logic was: if (!isComplex) rotation = 0; else random.
+        // Page 1 set creates mesh. Page 2 set creates mesh.
+        // So they can set rotation there.
+
         originMesh.position.set(initialX, 0, CONFIG.ORIGIN_Z);
 
         // Visibility
@@ -80,10 +84,10 @@ export class Ellipse {
             finished: false
         };
 
-        this.updateGeometry();
+        this.updateGeometry(taperEnabled);
     }
 
-    updateGeometry() {
+    updateGeometry(taperEnabled: boolean = false) {
         const d = this.data;
         const start = d.currentStartAngle;
         const end = d.currentEndAngle;
@@ -95,11 +99,14 @@ export class Ellipse {
         const tipY = b * Math.sin(end);
         d.originMesh.position.set(tipX, tipY, CONFIG.ORIGIN_Z);
 
-        // Page 2 Opacity Logic: Force 100% opacity for origin
-        if (this.config.isComplex) {
-            const mat = d.originMesh.material as THREE.MeshBasicMaterial;
-            mat.opacity = 1.0;
-        }
+        // Opacity Logic:
+        // Page 2 (Complex) forced 1.0 opacity. Page 1 relied on material default.
+        // If we want to enforce this, we can check config.forceSolidLine or similar.
+        // Or just assume the material passed in is correct.
+        // Page 2 set creates material with opacity 1.0.
+        // Page 1 set creates material with opacity 1.0 (cloned).
+        // Wait, Page 1 origin material is BasicMaterial.
+        // Let's trust the material setup in EllipseSet.
 
         // Visibility Check
         if (!State.hasInteracted || Math.abs(start - end) < 0.001) {
@@ -164,7 +171,7 @@ export class Ellipse {
 
                 let widthFactor = 0.5 + 0.5 * t * t; // Original profile (thickest at tip)
 
-                if (this.config.isComplex && t > taperThreshold) {
+                if (taperEnabled && t > taperThreshold) {
                     // Taper down to 0.6 at the tip to match origin width without protruding
                     const taperRange = 1.0 - taperThreshold;
                     if (taperRange > 0.0001) {
@@ -202,7 +209,7 @@ export class Ellipse {
         d.finished = false;
 
         d.container.rotation.z = d.rotation;
-        this.updateGeometry();
+        this.updateGeometry(this.config.taperEnabled);
     }
 
     update(_dt: number): boolean {
@@ -229,7 +236,7 @@ export class Ellipse {
 
         if (d.currentStartAngle <= d.targetEndAngle) d.finished = true;
 
-        if (animating) this.updateGeometry();
+        if (animating) this.updateGeometry(this.config.taperEnabled);
 
         return animating;
     }

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { CONFIG } from './Config';
 
 import { State, Mode } from './State';
-import { EllipseSet } from './EllipseSet';
+import { Page1EllipseSet, Page2EllipseSet } from './EllipseSet';
 import { randomizeShapeConditions } from './Utils';
 
 /**
@@ -45,7 +45,7 @@ function initEllipseAnimation() {
     scene.add(dirLight);
 
     // --- 2. Initialize Sets ---
-    const setPage1 = new EllipseSet(scene, {
+    const setPage1 = new Page1EllipseSet(scene, {
         count: 150,
         radiusScale: 1.0,
         isCentered: false,
@@ -59,14 +59,13 @@ function initEllipseAnimation() {
     // - Larger scale (150% of base size)
     // - Constant origin size (inversely scaled)
     // - Solid line rendering via high opacity multiplier
-    const setPage2 = new EllipseSet(scene, {
+    const setPage2 = new Page2EllipseSet(scene, {
         count: 1,
         radiusScale: 1.7 * 1.5,
         isCentered: true,
         segments: 256,
         hasShadow: false,
         originScale: (0.13 * 0.9 * 1.7) / 1.5,
-        isComplex: true,
         opacityMultiplier: CONFIG.PAGE2_OPACITY_MULT
     });
 
@@ -120,9 +119,15 @@ function initEllipseAnimation() {
 
         if (State.blurTimer > State.nextBlurSwitchDuration) {
             State.blurTimer = 0;
-            State.nextBlurSwitchDuration = 3 + Math.random() * 3; // Shortened duration
-
             State.isBlurred = !State.isBlurred;
+
+            if (State.isBlurred) {
+                // Blur Phase: Keep long (8-16s)
+                State.nextBlurSwitchDuration = 8 + Math.random() * 8;
+            } else {
+                // Normal Phase: Shorten (3-6s) to make blur feel relatively longer
+                State.nextBlurSwitchDuration = 3 + Math.random() * 3;
+            }
             if (blurOverlay) {
                 blurOverlay.style.opacity = State.isBlurred ? '1' : '0';
                 if (State.isBlurred) {
